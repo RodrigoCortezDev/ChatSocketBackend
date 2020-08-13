@@ -6,7 +6,7 @@ const rooms = [
 	{ id: '22222', userDe: '3', userPara: '4' },
 ];
 
-class Socket {
+export default class Socket {
 	private server: http.Server;
 	private port: number;
 
@@ -76,4 +76,3 @@ class Socket {
 		console.log('Socket disponivel');
 	}
 }
-export default Socket;
