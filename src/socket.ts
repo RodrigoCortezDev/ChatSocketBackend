@@ -1,10 +1,8 @@
 import http from 'http';
 import socketIO from 'socket.io';
+import uuid from 'uuid-random';
 
-const rooms = [
-	{ id: '11111', userDe: '1', userPara: '2' },
-	{ id: '22222', userDe: '3', userPara: '4' },
-];
+const rooms = [{ id: '', userDe: '999', userPara: '999' }];
 
 export default class Socket {
 	private server: http.Server;
@@ -26,9 +24,9 @@ export default class Socket {
 				console.log(socket.id + ' - (login)');
 				const room = this.retornaRoom(userDe, userPara);
 				if (room) {
-					console.log(`${socket.id} - (logado - ${room.id})`);
-					socket.join(room.id);
-					socket.handshake.headers.sala = room.id;
+					console.log(`${socket.id} - (logado - ${room})`);
+					socket.join(room);
+					socket.handshake.headers.sala = room;
 				}
 			});
 
@@ -58,17 +56,25 @@ export default class Socket {
 		}, 1000);
 
 		//Exibir qtde de sockets conectados
-		setInterval(() => {
-			console.log(Object.keys(io.sockets.sockets).length);
-		}, 5000);
+		// setInterval(() => {
+		// 	console.log(Object.keys(io.sockets.sockets).length);
+		// }, 5000);
 	}
 
 	public retornaRoom(userDe: string, userPara: string) {
+		//Tenta encontrar a sala para os usuários em questão
 		const room = rooms.filter(r => {
 			return (r.userDe === userDe && r.userPara === userPara) || (r.userDe === userPara && r.userPara === userDe);
 		})[0];
-		if (room) return room;
-		else return null; //fazer esquema de criar nova sala
+
+		//Caso não tenha a sala cria uma nova
+		if (room) {
+			return room.id;
+		} else {
+			const idSala = uuid();
+			rooms.push({ id: idSala, userDe, userPara });
+			return idSala;
+		}
 	}
 
 	public start() {
