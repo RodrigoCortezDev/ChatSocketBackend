@@ -2,7 +2,7 @@ import http from 'http';
 import socketIO from 'socket.io';
 import uuid from 'uuid-random';
 
-const rooms = [{ id: '', userDe: '999', userPara: '999' }];
+const rooms = [{ id: '', userDe: '', userPara: '' }];
 
 export default class Socket {
 	private server: http.Server;
@@ -23,11 +23,11 @@ export default class Socket {
 			socket.on('login', (userDe, userPara) => {
 				console.log(socket.id + ' - (login)');
 				const room = this.retornaRoom(userDe, userPara);
-				if (room) {
-					console.log(`${socket.id} - (logado - ${room})`);
-					socket.join(room);
-					socket.handshake.headers.sala = room;
-				}
+
+				console.log(`${socket.id} - (logado - ${room})`);
+				socket.join(room);
+				socket.handshake.headers.user = userDe;
+				socket.handshake.headers.sala = room;
 			});
 
 			//Escuta (caso o app envie cai aqui)
@@ -56,9 +56,36 @@ export default class Socket {
 		}, 1000);
 
 		//Exibir qtde de sockets conectados
-		// setInterval(() => {
-		// 	console.log(Object.keys(io.sockets.sockets).length);
-		// }, 5000);
+		setInterval(() => {
+			//console.log(Object.keys(io.sockets.sockets).length);
+
+			// Object.keys(io.sockets.sockets).forEach(element => {
+			// 	console.log(
+			// 		' - user: ' +
+			// 			io.sockets.sockets[element].handshake.headers.user +
+			// 			' - sala: ' +
+			// 			io.sockets.sockets[element].handshake.headers.sala,
+			// 	);
+			// });
+
+			// for (var socketId in io.sockets.sockets) {
+			// 	console.log(
+			// 		' - user: ' +
+			// 			io.sockets.sockets[socketId].handshake.headers.user +
+			// 			' - sala: ' +
+			// 			io.sockets.sockets[socketId].handshake.headers.sala,
+			// 	);
+			// }
+
+			//console.log(Array(io.sockets.sockets));
+
+			const isUser2Connected = Object.values(io.sockets.sockets).filter(socket => {
+				return socket.handshake.headers.user === '2' && socket.connected;
+			})[0];
+			if (isUser2Connected) {
+				console.log('User 2 logado');
+			}
+		}, 5000);
 	}
 
 	public retornaRoom(userDe: string, userPara: string) {
