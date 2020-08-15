@@ -2,7 +2,13 @@ import http from 'http';
 import socketIO from 'socket.io';
 import uuid from 'uuid-random';
 
-const arrMessagesDB = [{ id: '', userDe: '', userPara: '', message: '' }];
+interface MessagesInterface {
+	id: string;
+	userDe: string;
+	userPara: string;
+	message: string;
+}
+const arrMessagesDB: MessagesInterface[] = [];
 
 export default class Socket {
 	private server: http.Server;
