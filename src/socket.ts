@@ -28,7 +28,7 @@ export default class Socket {
 				const room = this.retornaRoom(userDe, userPara);
 				//Recuperando mensagens antigas e enviando
 				const oldMsg = arrMessagesDB.filter(r => {
-					return r.id === room;
+					return r.id === room && r.message !== '';
 				});
 				if (oldMsg.length > 0) {
 					socket.emit('oldmessages', oldMsg);
@@ -42,19 +42,24 @@ export default class Socket {
 
 			//Escuta (caso o app envie cai aqui)
 			socket.on('messageroom', (msg, userDe, userPara) => {
-				//tenta achar a sala dos usuarios
-				//const room = this.retornaRoom(userDe, userPara);
-
 				if (socket.handshake.headers.sala) {
-					//Criando a mensagem
-					const mensagem = { id: socket.handshake.headers.sala, userDe, userPara, message: msg };
-
-					//Envia a msg para a sala
-					this.io.to(socket.handshake.headers.sala).emit('messageroom', mensagem);
-					//console.log(`${socket.id} - (message) - ${msg} to ${socket.handshake.headers.sala}`);
-
-					//gravando no historico
-					arrMessagesDB.push(mensagem);
+					try {
+						//Criando a mensagem
+						const mensagem = { id: socket.handshake.headers.sala, userDe, userPara, message: msg };
+						//gravando no historico
+						arrMessagesDB.push(mensagem);
+						//Envia a msg para a sala
+						this.io.to(socket.handshake.headers.sala).emit('messageroom', mensagem);
+						//console.log(`${socket.id} - (message) - ${msg} to ${socket.handshake.headers.sala}`);
+					} catch (error) {
+						const erro = {
+							id: socket.handshake.headers.sala,
+							userDe,
+							userPara,
+							message: 'Erro ao enviar ensagem',
+						};
+						this.io.to(socket.handshake.headers.sala).emit('messageroom', erro);
+					}
 
 					//Se o userPara não está conectado enviar o Push (firebase)
 					if (!this.isUserConnected(userPara)) {
@@ -118,7 +123,9 @@ export default class Socket {
 			return room.id;
 		} else {
 			const idSala = uuid();
-			arrMessagesDB.push({ id: idSala, userDe, userPara, message: 'Bem vindo ao App Surf' });
+			//Precisa inclluir algo pois se os 2 usuários abrirem o chat, e realizar o login
+			//vão entrar em salas diferentes, no caso o primeiro que entrar cria a sala para os 2
+			arrMessagesDB.push({ id: idSala, userDe, userPara, message: '' });
 			return idSala;
 		}
 	}
