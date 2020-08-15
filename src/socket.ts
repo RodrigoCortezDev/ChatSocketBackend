@@ -2,29 +2,39 @@ import http from 'http';
 import socketIO from 'socket.io';
 import uuid from 'uuid-random';
 
-const rooms = [{ id: '', userDe: '', userPara: '' }];
+const arrMessagesDB = [{ id: '', userDe: '', userPara: '', message: '' }];
 
 export default class Socket {
 	private server: http.Server;
 	private port: number;
+	private io: socketIO.Server;
 
 	constructor(port: number, app: http.RequestListener) {
 		this.port = port;
 		this.server = new http.Server(app);
-		const io: socketIO.Server = socketIO(this.server);
+		this.io = socketIO(this.server);
 
-		io.on('connection', (socket: socketIO.Socket) => {
+		this.io.on('connection', (socket: socketIO.Socket) => {
 			console.log(socket.id + ' - Socket conectado');
 
 			//Envios padrão para o socket ao conectar
-			socket.emit('message', 'Olá ' + socket.id);
+			//socket.emit('message', 'Olá ' + socket.id);
 
 			//Escuta (caso o app envie cai aqui)
 			socket.on('login', (userDe, userPara) => {
+				//Iniciando Login
 				console.log(socket.id + ' - (login)');
+				//Recuperando/criando sala
 				const room = this.retornaRoom(userDe, userPara);
+				//Recuperando mensagens antigas e enviando
+				const oldMsg = arrMessagesDB.filter(r => {
+					return r.id === room;
+				});
+				if (oldMsg.length > 0) {
+					socket.emit('oldmessages', oldMsg);
+				}
 
-				console.log(`${socket.id} - (logado - ${room})`);
+				console.log(`${socket.id} - sala - ${room})`);
 				socket.join(room);
 				socket.handshake.headers.user = userDe;
 				socket.handshake.headers.sala = room;
@@ -36,11 +46,20 @@ export default class Socket {
 				//const room = this.retornaRoom(userDe, userPara);
 
 				if (socket.handshake.headers.sala) {
-					//Envia a msg para a sala
-					io.to(socket.handshake.headers.sala).emit('messageroom', msg);
+					//Criando a mensagem
+					const mensagem = { id: socket.handshake.headers.sala, userDe, userPara, message: msg };
 
-					//Enviando para sala
-					console.log(`${socket.id} - (message) - ${msg} to ${socket.handshake.headers.sala}`);
+					//Envia a msg para a sala
+					this.io.to(socket.handshake.headers.sala).emit('messageroom', mensagem);
+					//console.log(`${socket.id} - (message) - ${msg} to ${socket.handshake.headers.sala}`);
+
+					//gravando no historico
+					arrMessagesDB.push(mensagem);
+
+					//Se o userPara não está conectado enviar o Push (firebase)
+					if (!this.isUserConnected(userPara)) {
+						console.log(`Enviando notificação para ${userPara}`);
+					}
 				}
 			});
 
@@ -52,45 +71,45 @@ export default class Socket {
 
 		//Teste de varios envios globais
 		setInterval(() => {
-			io.emit('ping', new Date().toString());
+			this.io.emit('ping', new Date().toString());
 		}, 1000);
 
 		//Exibir qtde de sockets conectados
 		setInterval(() => {
-			//console.log(Object.keys(io.sockets.sockets).length);
+			console.log(Object.keys(this.io.sockets.sockets).length);
+		}, 10000);
+	}
 
-			// Object.keys(io.sockets.sockets).forEach(element => {
-			// 	console.log(
-			// 		' - user: ' +
-			// 			io.sockets.sockets[element].handshake.headers.user +
-			// 			' - sala: ' +
-			// 			io.sockets.sockets[element].handshake.headers.sala,
-			// 	);
-			// });
+	public isUserConnected(user: string) {
+		// Object.keys(io.sockets.sockets).forEach(element => {
+		// 	console.log(
+		// 		' - user: ' +
+		// 			io.sockets.sockets[element].handshake.headers.user +
+		// 			' - sala: ' +
+		// 			io.sockets.sockets[element].handshake.headers.sala,
+		// 	);
+		// });
 
-			// for (var socketId in io.sockets.sockets) {
-			// 	console.log(
-			// 		' - user: ' +
-			// 			io.sockets.sockets[socketId].handshake.headers.user +
-			// 			' - sala: ' +
-			// 			io.sockets.sockets[socketId].handshake.headers.sala,
-			// 	);
-			// }
+		// for (var socketId in io.sockets.sockets) {
+		// 	console.log(
+		// 		' - user: ' +
+		// 			io.sockets.sockets[socketId].handshake.headers.user +
+		// 			' - sala: ' +
+		// 			io.sockets.sockets[socketId].handshake.headers.sala,
+		// 	);
+		// }
 
-			//console.log(Array(io.sockets.sockets));
+		//console.log(Array(io.sockets.sockets));
 
-			const isUser2Connected = Object.values(io.sockets.sockets).filter(socket => {
-				return socket.handshake.headers.user === '2' && socket.connected;
-			})[0];
-			if (isUser2Connected) {
-				console.log('User 2 logado');
-			}
-		}, 5000);
+		const isUserConnected = Object.values(this.io.sockets.sockets).filter(socket => {
+			return socket.handshake.headers.user === user && socket.connected;
+		})[0];
+		return isUserConnected;
 	}
 
 	public retornaRoom(userDe: string, userPara: string) {
 		//Tenta encontrar a sala para os usuários em questão
-		const room = rooms.filter(r => {
+		const room = arrMessagesDB.filter(r => {
 			return (r.userDe === userDe && r.userPara === userPara) || (r.userDe === userPara && r.userPara === userDe);
 		})[0];
 
@@ -99,7 +118,7 @@ export default class Socket {
 			return room.id;
 		} else {
 			const idSala = uuid();
-			rooms.push({ id: idSala, userDe, userPara });
+			arrMessagesDB.push({ id: idSala, userDe, userPara, message: 'Bem vindo ao App Surf' });
 			return idSala;
 		}
 	}
