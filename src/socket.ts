@@ -21,7 +21,7 @@ export default class Socket {
 		this.io = socketIO(this.server);
 
 		this.io.on('connection', (socket: socketIO.Socket) => {
-			console.log(socket.id + ' - Socket conectado');
+			console.log(`${socket.id} - Socket conectado - Total: ${Object.keys(this.io.sockets.sockets).length}`);
 
 			//Envios padrão para o socket ao conectar
 			//socket.emit('message', 'Olá ' + socket.id);
@@ -76,7 +76,7 @@ export default class Socket {
 
 			//Escuta de desconexão
 			socket.on('disconnect', () => {
-				console.log(socket.id + ' - Socket desconectado');
+				console.log(`${socket.id} - Socket desconectado - Resta: ${Object.keys(this.io.sockets.sockets).length}`);
 			});
 		});
 
