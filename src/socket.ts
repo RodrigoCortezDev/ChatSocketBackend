@@ -76,7 +76,7 @@ export default class Socket {
 
 		//Teste de varios envios globais
 		setInterval(() => {
-			this.io.emit('ping', new Date().toString());
+			this.io.emit('ping', new Date().toISOString());
 		}, 1000);
 
 		//Exibir qtde de sockets conectados
