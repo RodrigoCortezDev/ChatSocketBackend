@@ -62,7 +62,7 @@ export default class Socket {
 							id: socket.handshake.headers.sala,
 							userDe,
 							userPara,
-							message: 'Erro ao enviar ensagem',
+							message: 'Erro ao enviar mensagem',
 						};
 						this.io.to(socket.handshake.headers.sala).emit('messageroom', erro);
 					}
@@ -112,17 +112,17 @@ export default class Socket {
 
 		//console.log(Array(io.sockets.sockets));
 
-		const isUserConnected = Object.values(this.io.sockets.sockets).filter(socket => {
+		const isUserConnected = Object.values(this.io.sockets.sockets).find(socket => {
 			return socket.handshake.headers.user === user && socket.connected;
-		})[0];
+		});
 		return isUserConnected;
 	}
 
 	public retornaRoom(userDe: string, userPara: string) {
 		//Tenta encontrar a sala para os usuários em questão
-		const room = arrMessagesDB.filter(r => {
+		const room = arrMessagesDB.find(r => {
 			return (r.userDe === userDe && r.userPara === userPara) || (r.userDe === userPara && r.userPara === userDe);
-		})[0];
+		});
 
 		//Caso não tenha a sala cria uma nova
 		if (room) {
