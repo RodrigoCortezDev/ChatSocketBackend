@@ -4,8 +4,8 @@ import uuid from 'uuid-random';
 
 interface MessagesInterface {
 	id: string;
-	userDe: string;
-	userPara: string;
+	userFromId: string;
+	userToId: string;
 	message: string;
 }
 const arrMessagesDB: MessagesInterface[] = [];
@@ -51,7 +51,12 @@ export default class Socket {
 				if (socket.handshake.headers.sala) {
 					try {
 						//Criando a mensagem
-						const mensagem = { id: socket.handshake.headers.sala, userDe, userPara, message: msg };
+						const mensagem = {
+							id: socket.handshake.headers.sala,
+							userFromId: userDe,
+							userToId: userPara,
+							message: msg,
+						};
 						//gravando no historico
 						arrMessagesDB.push(mensagem);
 						//Envia a msg para a sala
@@ -121,7 +126,9 @@ export default class Socket {
 	public retornaRoom(userDe: string, userPara: string) {
 		//Tenta encontrar a sala para os usuários em questão
 		const room = arrMessagesDB.find(r => {
-			return (r.userDe === userDe && r.userPara === userPara) || (r.userDe === userPara && r.userPara === userDe);
+			return (
+				(r.userFromId === userDe && r.userToId === userPara) || (r.userFromId === userPara && r.userToId === userDe)
+			);
 		});
 
 		//Caso não tenha a sala cria uma nova
@@ -131,7 +138,7 @@ export default class Socket {
 			const idSala = uuid();
 			//Precisa inclluir algo pois se os 2 usuários abrirem o chat, e realizar o login
 			//vão entrar em salas diferentes, no caso o primeiro que entrar cria a sala para os 2
-			arrMessagesDB.push({ id: idSala, userDe, userPara, message: '' });
+			arrMessagesDB.push({ id: idSala, userFromId: userDe, userToId: userPara, message: '' });
 			return idSala;
 		}
 	}
